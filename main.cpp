@@ -1,7 +1,9 @@
+#include "input.hpp"
 #include "mmw.h"
 
 #include <chrono>
 #include <iostream>
+#include <memory>
 #include <signal.h>
 #include <string.h>
 #include <thread>
@@ -9,11 +11,26 @@
 #include <unistd.h>
 
 using namespace std;
+using namespace photo_booth;
 
 Window create_borderless_window(Display* display, int screen, int x, int y, int width, int height, unsigned long background_color);
 void set_always_on_top(Display* display, const Window& window);
 
 int main() {
+
+    auto const input = make_unique<Input>();
+    input->run_test();
+
+    while(true) {
+        auto const red_pressed = input->get_button_pressed(Button::Red);
+        auto const green_pressed = input->get_button_pressed(Button::Green);
+
+        cout << (red_pressed ? 1 : 0) << " " << (green_pressed ? 1 : 0) << endl;
+
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+
+    return 0;
 
     auto video_process_id = fork();
 
