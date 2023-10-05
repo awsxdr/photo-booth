@@ -6,3 +6,6 @@ build_type="${1:-Debug}"
 
 cmake -B ./build -DCMAKE_BUILD_TYPE=$build_type
 cmake --build ./build --config $build_type
+
+sudo chown root:root ./build/photo_booth
+sudo chmod 4755 ./build/photo_booth

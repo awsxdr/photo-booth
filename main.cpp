@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <thread>
 #include <X11/Xlib.h>
@@ -15,47 +16,24 @@ using namespace photo_booth;
 
 Window create_borderless_window(Display* display, int screen, int x, int y, int width, int height, unsigned long background_color);
 void set_always_on_top(Display* display, const Window& window);
+int start_video_capture();
 
 int main() {
-
     auto const input = make_unique<Input>();
     input->run_test();
-
-    while(true) {
-        auto const red_pressed = input->get_button_pressed(Button::Red);
-        auto const green_pressed = input->get_button_pressed(Button::Green);
-
-        cout << (red_pressed ? 1 : 0) << " " << (green_pressed ? 1 : 0) << endl;
-
-        this_thread::sleep_for(chrono::milliseconds(100));
-    }
-
-    return 0;
-
-    auto video_process_id = fork();
-
-    if(video_process_id < 0) {
-        cout << "Error during fork";
-        return -1;
-    } else if(video_process_id == 0) {
-        execlp("libcamera-vid", "libcamera-vid", "-f", "-t", "0", "--width", "1920", "--height", "1080", "--framerate", "30", "--inline", "--gain", "50", nullptr);
-        return 0;
-    }
+    auto video_process_id = start_video_capture();
 
     auto const display = XOpenDisplay(nullptr);
     auto const screen = DefaultScreen(display);
 
     auto const top_window = create_borderless_window(display, screen, 0, 0, DisplayWidth(display, screen), 100, XBlackPixel(display, screen));    
     auto const bottom_window = create_borderless_window(display, screen, 0, DisplayHeight(display, screen) - 100, DisplayWidth(display, screen), 100, XBlackPixel(display, screen));    
-    //auto const flash_window = create_borderless_window(display, screen, 0, 0, DisplayWidth(display, screen), DisplayHeight(display, screen), XWhitePixel(display, screen));
 
-    //XWithdrawWindow(display, flash_window, screen);
     XFlush(display);
 
-    auto const start_time = std::chrono::system_clock::now();
-
-    auto has_taken_picture = false;
-    auto is_taking_picture = true;
+    auto picture_start_time = chrono::system_clock::now();
+    auto is_taking_picture = false;
+    auto green_down = false;
 
     XEvent event;
     while(true) {
@@ -65,11 +43,11 @@ int main() {
             this_thread::sleep_for(chrono::milliseconds(1));
         }
 
-        if(!has_taken_picture && chrono::system_clock::now() > start_time + chrono::seconds(5)) {
-            has_taken_picture = true;
-            //XMapWindow(display, flash_window);
-            //XRaiseWindow(display, flash_window);
+        auto const new_green_down = input->get_button_pressed(Button::Green);
+
+        if(!is_taking_picture && green_down && !new_green_down) {
             is_taking_picture = true;
+            picture_start_time = chrono::system_clock::now();
             cout << "Taking picture" << endl;
 
             kill(video_process_id, 1);
@@ -80,16 +58,12 @@ int main() {
             }
         }
 
-        if(is_taking_picture && chrono::system_clock::now() > start_time + chrono::seconds(6)) {
+        green_down = new_green_down;
+
+        if(is_taking_picture && chrono::system_clock::now() > picture_start_time + chrono::seconds(1)) {
             is_taking_picture = false;
-            video_process_id = fork();
+            video_process_id = start_video_capture();
 
-            if(video_process_id == 0) {
-                execlp("libcamera-vid", "libcamera-vid", "-f", "-t", "0", "--width", "1920", "--height", "1080", "--framerate", "30", "--inline", nullptr);
-                return 0;
-            }
-
-            //XWithdrawWindow(display, flash_window, screen);
             cout << "Picture taken" << endl;
         }
     }
@@ -153,4 +127,15 @@ void set_always_on_top(Display* display, const Window& window) {
     XSendEvent(display, DefaultRootWindow(display), False, SubstructureRedirectMask | SubstructureNotifyMask, reinterpret_cast<XEvent*>(&message_event));
 
     XFlush(display);
+}
+
+int start_video_capture() {
+    auto const process_id = fork();
+
+    if(process_id == 0) {
+        execlp("libcamera-vid", "libcamera-vid", "-f", "-t", "0", "--width", "1920", "--height", "1080", "--framerate", "30", "--inline", "--gain", "50", nullptr);
+        exit(0);
+    }
+
+    return process_id;
 }
