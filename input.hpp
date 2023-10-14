@@ -1,7 +1,7 @@
 #pragma once
 
 namespace photo_booth {
-    enum class Button {
+    enum class ButtonType {
         Red,
         Green
     };
@@ -17,7 +17,7 @@ namespace photo_booth {
 
         void run_test();
 
-        void set_light(Button button, bool on);
-        bool get_button_pressed(Button button);
+        void set_light(ButtonType button, bool on);
+        bool get_button_pressed(ButtonType button);
     };
 }

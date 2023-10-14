@@ -43,40 +43,40 @@ Input::~Input() {
 
 void Input::run_test() {
     for(auto i = 0; i < 5; ++i) {
-        set_light(Button::Green, true);
-        set_light(Button::Red, true);
+        set_light(ButtonType::Green, true);
+        set_light(ButtonType::Red, true);
         this_thread::sleep_for(chrono::milliseconds(500));
 
-        set_light(Button::Green, false);
-        set_light(Button::Red, false);
+        set_light(ButtonType::Green, false);
+        set_light(ButtonType::Red, false);
         this_thread::sleep_for(chrono::milliseconds(500));
     }
 }
 
-void Input::set_light(Button button, bool value) {
+void Input::set_light(ButtonType button, bool value) {
     auto const set_light = [value](int light_pin) {
         gpioWrite(light_pin, value ? PI_HIGH : PI_LOW);
     };
 
     switch(button) {
-        case Button::Green:
+        case ButtonType::Green:
             this->green_light_on = value;
             set_light(PIN_GREEN_LIGHT);
             break;
 
-        case Button::Red:
+        case ButtonType::Red:
             this->red_light_on = value;
             set_light(PIN_RED_LIGHT);
             break;
     }
 }
 
-bool Input::get_button_pressed(Button button) {
+bool Input::get_button_pressed(ButtonType button) {
     switch(button) {
-        case Button::Green:
+        case ButtonType::Green:
             return gpioRead(PIN_GREEN_INPUT) != 0;
 
-        case Button::Red:
+        case ButtonType::Red:
             return gpioRead(PIN_RED_INPUT) != 0;
     }
 
