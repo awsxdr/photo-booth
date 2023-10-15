@@ -1,10 +1,14 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { SplashPage, UploadPage } from './pages';
+import { GalleryPage, SplashPage, UploadPage } from './pages';
 
 const router = createBrowserRouter([
     {
         path: '/',
         element: <SplashPage />
+    },
+    {
+        path: '/gallery',
+        element: <GalleryPage />
     },
     {
         path: '/upload',

@@ -33,4 +33,5 @@
 
 build/
 
-lambdaFunc.zip
+*.zip
+test.jpeg

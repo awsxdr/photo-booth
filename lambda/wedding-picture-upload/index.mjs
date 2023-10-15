@@ -31,10 +31,13 @@ async function getPhotoList() {
     Bucket: "tim-leanne-wedding-photos",
     Prefix: "photos/"
   }));
-  
+
   const photos = response.Contents
     .filter(item => item.Key.endsWith(".jpg"))
-    .map(item => item.Key);
+    .filter(item => !item.Key.includes("/thumbnails/"))
+    .sort((a, b) => b.Date - a.Date)
+    .map(item => item.Key)
+    .map(item => item.match(/\/([^\/]+)$/)[1]);
   
   return { photos };
 }
