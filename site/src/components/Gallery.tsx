@@ -8,7 +8,7 @@ interface GalleryProps {
 export const Gallery = ({ photoNames }: GalleryProps) => {
 
     return (
-        <ImageList variant="masonry">
+        <ImageList>
             {
                 photoNames.map(photo => (
                     <ImageListItem key={photo}>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/cake-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/cake-32.png" />
+    <link rel="icon" type="image/png" sizes="72x72" href="/favicon/cake-72.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon/cake-96.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tim & Leanne's Wedding Photos</title>
+  </head>
+  <body>
+    <div id="blanker"></div>
+    <img id="image1" />
+    <img id="image2" />
+
+    <style>
+        body {
+            background-color: black;
+        }
+
+        img {
+            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            margin: 0;
+            border: 0;
+        }
+
+        #blanker {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: black;
+            margin: 0;
+            border: 0;
+        }
+
+        .fadeOut {
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s 2s, opacity 2s linear;
+        }
+    </style>
+
+    <script>
+        function getPictures() {
+            return new Promise(resolve =>
+                fetch('/api/photos', {
+                    method: 'GET'
+                }).then((response) => {
+                    response.json().then((json) => {
+                        resolve(json.photos);
+                    });
+                }));
+        }
+
+        let shownImage = 0;
+        let shownImageCount = 0;
+
+        window.onload = () => {
+            const images = [
+                document.getElementById('image1'),
+                document.getElementById('image2'),
+            ];
+            const blanker = document.getElementById('blanker');
+
+            let photo = "";
+
+            function loadNextPicture() {
+                return getPictures().then(photos => {
+                    if(photos.length >= 5 && shownImageCount < 6) {
+                        const photoIndex = Math.floor(Math.random() * photos.length);
+                        photo = `/photos/${photos[photoIndex]}`;
+                    } else {
+                        photo = '/upload_poster.png';
+                        shownImageCount = 0;
+                    }
+                });
+            }
+
+            function showNextPicture() {
+                const targetImage = (shownImage + 1) % 2;
+                images[targetImage].src = photo;
+
+                images[shownImage].classList.add('fadeOut');
+                blanker.classList.add('fadeOut');
+
+                setTimeout(() => {
+                    images[targetImage].style.zIndex = 2;
+                    blanker.style.zIndex = 1;
+                    blanker.classList.remove('fadeOut');
+                    images[shownImage].style.zIndex = 0;
+                    images[shownImage].classList.remove('fadeOut');
+                    shownImage = targetImage;
+                    ++shownImageCount;
+
+                    loadNextPicture().then(() => setTimeout(showNextPicture, 8000));
+                }, 4000);
+            }
+
+            loadNextPicture().then(showNextPicture);
+        };
+
+    </script>
+  </body>
+</html>

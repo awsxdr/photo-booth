@@ -35,7 +35,7 @@ async function getPhotoList() {
   const photos = response.Contents
     .filter(item => item.Key.endsWith(".jpg"))
     .filter(item => !item.Key.includes("/thumbnails/"))
-    .sort((a, b) => b.Date - a.Date)
+    .sort((a, b) => new Date(b.LastModified) - new Date(a.LastModified))
     .map(item => item.Key)
     .map(item => item.match(/\/([^\/]+)$/)[1]);
   
