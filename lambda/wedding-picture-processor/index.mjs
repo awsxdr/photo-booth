@@ -62,7 +62,7 @@ export const handler = async (event) => {
                     ContentType: 'image/jpeg',
                 }));
         
-                var jpegBuffer = await sharp(buffer).jpeg().toBuffer();
+                var jpegBuffer = await sharp(buffer).jpeg({ quality: 100 }).toBuffer();
                 console.log(`Creating photo 'photos/${fileNameWithoutExtension}.jpg'`);
                 await s3.send(new PutObjectCommand({
                     Bucket: BUCKET_NAME,
