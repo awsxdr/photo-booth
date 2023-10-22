@@ -81,12 +81,14 @@
                         photo = '/upload_poster.png';
                         shownImageCount = 0;
                     }
+
+                    const targetImage = (shownImage + 1) % 2;
+                    images[targetImage].src = photo;
                 });
             }
 
             function showNextPicture() {
                 const targetImage = (shownImage + 1) % 2;
-                images[targetImage].src = photo;
 
                 images[shownImage].classList.add('fadeOut');
                 blanker.classList.add('fadeOut');
