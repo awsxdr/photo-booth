@@ -50,11 +50,8 @@ export const UploadPage = () => {
                         handleUploadComplete();
                     });
         
-                    const data = new FormData();
-                    data.append("image", file.file);
-        
                     request.open("PUT", uploadResponse.uploadUrl, true);
-                    request.send(data);
+                    request.send(file.file);
                 });
             });
         });
