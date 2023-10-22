@@ -1,4 +1,5 @@
 import { S3Client, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import parser from 'lambda-multipart-parser';
 import { randomUUID } from 'crypto';
 
@@ -16,7 +17,7 @@ async function handlePhotos(event) {
       return Ok(await getPhotoList());
     
     case "POST":
-      return await uploadPhoto(event);
+      return await getPhotoUploadUrl(event);
   }
   
   return NotFound();
@@ -68,6 +69,32 @@ async function uploadPhoto(event) {
   }));
   
   return Ok({});
+}
+
+async function getPhotoUploadUrl(event) {
+  const s3 = new S3Client({
+    region: 'eu-west-2',
+  });
+
+  const fileName = JSON.parse(event.body).fileName;
+  const extensionStart = fileName.lastIndexOf('.');
+  if(extensionStart < 0) {
+    return BadRequest();
+  }
+  const extension = fileName.substring(extensionStart);
+  const newFileName = `${randomUUID()}${extension}`;
+  
+  const putCommand = new PutObjectCommand({
+    Bucket: "tim-leanne-wedding-photos",
+    Key: `photoUploads/${newFileName}`,
+  })
+
+  const signedUrl = await getSignedUrl(
+    s3,
+    putCommand,
+    { expiresIn: 60 });
+
+  return Ok({ uploadUrl: signedUrl});
 }
 
 function Ok(body) {
