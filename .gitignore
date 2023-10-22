@@ -35,3 +35,4 @@ build/
 
 *.zip
 test.jpeg
+.vscode/settings.json

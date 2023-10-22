@@ -1,14 +1,17 @@
 #include "input.hpp"
 #include "photo_booth.hpp"
+#include "upload_process.hpp"
 #include "window_manager.hpp"
 
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <signal.h>
 #include <stdlib.h>
 #include <thread>
 #include <unistd.h>
+#include <uuid/uuid.h>
 
 using namespace photo_booth;
 using namespace std;
@@ -44,6 +47,8 @@ void PhotoBooth::run() {
     this->set_state(State::Idle);
     this->window_manager->set_countdown_state(CountdownState::Idle);
     this->input->set_light(ButtonType::Green, true);
+
+    UploadProcess::start();
 
     while (true) {
         if(chrono::system_clock::now() - this->last_input_tick_time > chrono::milliseconds(100)) {
@@ -106,7 +111,7 @@ void PhotoBooth::start_still_capture() {
     auto const process_id = fork();
 
     if(process_id == 0) {
-        execlp("libcamera-jpeg", "libcamera-jpeg", "-o", "./test.jpeg", "-n", "-t", "1", "--width", "4056", "--height", "2282", "--immediate", nullptr);
+        execlp("libcamera-jpeg", "libcamera-jpeg", "-o", "./current.jpeg", "-n", "-t", "1", "--width", "4056", "--height", "2282", "--immediate", nullptr);
         exit(0);
     }
 }
@@ -127,10 +132,13 @@ void PhotoBooth::idle_tick() {
         this->window_manager->set_countdown_state(CountdownState::CountingDown);
     }
 
+// Allow red button to exit process if in debug mode
+#if DEBUG
     if(this->red_button->pressed_last_frame()) {
         this->set_state(State::Exiting);
         this->window_manager->set_countdown_state(CountdownState::Starting);
     }
+#endif
 }
 
 void PhotoBooth::count_down_tick() {
@@ -161,10 +169,10 @@ void PhotoBooth::count_down_tick() {
 }
 
 void PhotoBooth::picture_tick() {
-    if(chrono::system_clock::now() > this->state_change_time + chrono::seconds(4)) {
+    if(filesystem::exists("./current.jpeg")) {
         this->set_state(State::Previewing);
 
-        this->window_manager->show_preview("./test.jpeg");
+        this->window_manager->show_preview("./current.jpeg");
         this->window_manager->hide_flash();
         this->input->set_light(ButtonType::Green, true);
         this->input->set_light(ButtonType::Red, true);
@@ -174,32 +182,46 @@ void PhotoBooth::picture_tick() {
 }
 
 void PhotoBooth::preview_tick() {
+
+    auto const reset = [this]() {
+        this->window_manager->show_blank();
+        this->window_manager->hide_preview();
+        this->input->set_light(ButtonType::Green, false);
+        this->input->set_light(ButtonType::Red, false);
+        start_video_capture();
+        this->set_state(State::Restarting);
+    };
+
     if (chrono::system_clock::now() > this->state_change_time + chrono::seconds(60)) {
-        this->window_manager->show_blank();
-        this->window_manager->hide_preview();
-        this->input->set_light(ButtonType::Green, false);
-        this->input->set_light(ButtonType::Red, false);
-        start_video_capture();
-        this->set_state(State::Restarting);
+        // Assume photo is wanted, upload
+        this->upload_photo();
+        reset();
     }
 
+    // Photo wanted
     if (this->green_button->pressed_last_frame()) {
-        this->window_manager->show_blank();
-        this->window_manager->hide_preview();
-        this->input->set_light(ButtonType::Green, false);
-        this->input->set_light(ButtonType::Red, false);
-        start_video_capture();
-        this->set_state(State::Restarting);
+        this->upload_photo();
+        reset();
     }
 
+    // Photo rejected
     if (this->red_button->pressed_last_frame()) {
-        this->window_manager->show_blank();
-        this->window_manager->hide_preview();
-        this->input->set_light(ButtonType::Green, false);
-        this->input->set_light(ButtonType::Red, false);
-        start_video_capture();
-        this->set_state(State::Restarting);
+        if(filesystem::exists("./current.jpeg")) {
+            filesystem::remove("./current.jpeg");
+        }
+        reset();
     }
+}
+
+void PhotoBooth::upload_photo() {
+    auto const file_uuid_string = make_unique<char[]>(37);
+    uuid_t file_uuid;
+    uuid_generate(file_uuid);
+    uuid_unparse(file_uuid, file_uuid_string.get());
+
+    auto const file_path = string("./uploads/") + file_uuid_string.get() + ".jpeg";
+
+    filesystem::rename("./current.jpeg", file_path);
 }
 
 void PhotoBooth::restart_tick() {

@@ -42,6 +42,8 @@ namespace photo_booth {
         void preview_tick();
         void restart_tick();
 
+        void upload_photo();
+
         void set_state(State state);
         std::chrono::milliseconds get_milliseconds_since_state_change();
 

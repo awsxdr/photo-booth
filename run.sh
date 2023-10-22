@@ -1,2 +1,2 @@
 ./build.sh
-DISPLAY=:0 ./build/Debug/photo_booth
+(cd ./client/build/Debug/ && DISPLAY=:0 ./photo_booth)
