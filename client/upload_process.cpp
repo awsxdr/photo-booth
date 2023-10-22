@@ -23,12 +23,46 @@ void UploadProcess::start() {
 }
 
 bool UploadProcess::upload_file(string file_path) {
-    auto const curl_command = "curl -F \"image=@" + file_path + "\" https://tlwedding.awsxdr.com/api/photos";
+    auto const signed_url = get_signed_url(file_path);
+
+    if(signed_url == "") {
+        return false;
+    }
+
+    auto const curl_command = "curl -X PUT -T " + file_path + " \"" + signed_url + "\"";
     auto const pipe = popen(curl_command.c_str(), "r");
 
     auto const return_code = pclose(pipe);
 
     return return_code == EXIT_SUCCESS;
+}
+
+string UploadProcess::get_signed_url(string file_path) {
+    auto const curl_command = "curl -X POST -H \"Content-Type: application/json\" -d '{\"fileName\": \"" + filesystem::path(file_path).filename().string() + "\"}' https://tlwedding.awsxdr.com/api/photos";
+    auto const pipe = popen(curl_command.c_str(), "r");
+
+    char buffer[128];
+    string signed_url_json = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != nullptr) {
+            signed_url_json += buffer;
+        }
+    }
+
+    cout << "!!!!!!!!!!! Signed URL JSON: " << signed_url_json << endl;
+
+    if(signed_url_json.length() < 16) {
+        cout << "Invalid signed URL returned from API" << endl;
+        return "";
+    }
+
+    auto const return_code = pclose(pipe);
+
+    if(return_code != EXIT_SUCCESS) {
+        return "";
+    }
+
+    return signed_url_json.substr(14, signed_url_json.length() - 16);
 }
 
 void UploadProcess::process_files() {
