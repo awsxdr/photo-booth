@@ -1,3 +1,4 @@
-export * from './GalleryPage'
-export * from './SplashPage'
-export * from './UploadPage'
+export * from './DownloadPage';
+export * from './GalleryPage';
+export * from './SplashPage';
+export * from './UploadPage';

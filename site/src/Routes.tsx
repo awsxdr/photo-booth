@@ -1,5 +1,5 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { GalleryPage, SplashPage, UploadPage } from './pages';
+import { DownloadPage, GalleryPage, SplashPage, UploadPage } from './pages';
 
 const router = createBrowserRouter([
     {
@@ -13,6 +13,10 @@ const router = createBrowserRouter([
     {
         path: '/upload',
         element: <UploadPage />
+    },
+    {
+        path: '/download',
+        element: <DownloadPage />
     }
 ]);
 
