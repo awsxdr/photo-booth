@@ -8,11 +8,14 @@ interface GalleryProps {
 
 export const Gallery = ({ photoNames }: GalleryProps) => {
 
-    const [photosShown, setPhotosShown] = useState(6);
+    const [photosShown, setPhotosShown] = useState(20);
 
     useEffect(() => {
         window.addEventListener('scroll', () => {
-            if(photosShown < photoNames.length && window.scrollY + window.innerHeight * 2 > document.body.scrollHeight) {
+            const allPhotosShown = () => photosShown >= photoNames.length;
+            const scrollNearBottom = () => window.scrollY + window.innerHeight * 2 > document.body.scrollHeight;
+
+            if(!allPhotosShown() && scrollNearBottom()) {
                 setPhotosShown(value => value + 4);
             }
         });
