@@ -12,17 +12,24 @@ export const UploadPage = () => {
     const [files, setFiles] = useState<ImageUploadItem[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadsComplete, setUploadsComplete] = useState(false);
+    const [uploadsFailedCount, setUploadsFailedCount] = useState(0);
 
     const handleUpload = () => {
         setIsUploading(true);
 
         let completedUploadCount = 0;
+
         const handleUploadComplete = () => {
             ++completedUploadCount;
 
             if(completedUploadCount === files.length) {
                 setUploadsComplete(true);
             }
+        }
+
+        const handleUploadError = () => {
+            setUploadsFailedCount(current => current + 1);
+            handleUploadComplete();
         }
 
         files.forEach(file => {
@@ -49,6 +56,11 @@ export const UploadPage = () => {
                         file.uploadProgress = 100;
                         handleUploadComplete();
                     });
+
+                    request.upload.addEventListener('error', () => {
+                        file.uploadProgress = 0;
+                        handleUploadError();
+                    });
         
                     request.open("PUT", uploadResponse.uploadUrl, true);
                     request.send(file.file);
@@ -61,7 +73,12 @@ export const UploadPage = () => {
         <PageTemplate selectedTab={1}>
             <Stack spacing={2}>
                 { !uploadsComplete && <MultiImageUpload files={files} isUploading={isUploading} onFilesSelected={setFiles} onUploadClicked={handleUpload} /> }
-                { uploadsComplete && <Typography variant="h3">Upload complete!</Typography>}
+                { uploadsComplete && !!!uploadsFailedCount && <Typography variant="h3">Upload complete!</Typography>}
+                { uploadsComplete && !!uploadsFailedCount && 
+                    <>
+                        <Typography variant="h3">Upload failed</Typography>
+                        <Typography variant="h5">{uploadsFailedCount} pictures failed to upload. Please check your internet connection and try again shortly.</Typography>
+                    </>}
             </Stack>
         </PageTemplate>
     );
